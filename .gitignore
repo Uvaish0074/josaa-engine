@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+venv/
+env/
+.env
+
+# React / Node
+node_modules/
+josaa-frontend/node_modules/
+josaa-frontend/dist/
+.DS_Store
