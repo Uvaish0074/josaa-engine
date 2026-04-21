@@ -60,45 +60,35 @@ function App() {
   const [sortCol, setSortCol] = useState("closing_rank");
   const [sortDir, setSortDir] = useState("asc");
 
-  // 🔥 Make sure your Render URL is correct here
   const API_BASE_URL = "https://josaa-backend-api.onrender.com"; 
 
+  // 🔥 THE FIX: Unified Single-Fetch Architecture
   useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true);
       setError("");
       try {
-        let allColleges = [];
-        
         const encCat = encodeURIComponent(category);
         const encGen = encodeURIComponent(gender);
 
-        // Fetch IITs
-        const resAdv = await fetch(`${API_BASE_URL}/predict?rank=0&category=${encCat}&gender=${encGen}&round_no=${roundNo}&institute_type=Indian%20Institute%20of%20Technology`);
-        if (resAdv.ok) {
-          const result = await resAdv.json();
+        // Fetch ALL programs for this Round/Category/Gender in one go
+        const res = await fetch(`${API_BASE_URL}/predict?rank=0&category=${encCat}&gender=${encGen}&round_no=${roundNo}`);
+        
+        if (res.ok) {
+          const result = await res.json();
           if (result.predictions) {
-            const mapped = result.predictions.map(c => ({ ...c, exam: "JEE Adv" }));
-            allColleges = [...allColleges, ...mapped];
-          }
-        }
-
-        // Fetch NITs/IIITs/GFTIs
-        const resMain = await fetch(`${API_BASE_URL}/predict?rank=0&category=${encCat}&gender=${encGen}&round_no=${roundNo}`);
-        if (resMain.ok) {
-          const result = await resMain.json();
-          if (result.predictions) {
-            let nonIITs = result.predictions.filter(c => {
-              if (!c.institute_name) return true;
-              const rawName = c.institute_name.toLowerCase().replace(/[^a-z]/g, '');
-              return !(rawName.includes("indianinstituteoftechnology") || rawName.includes("ismdhanbad"));
+            // Intelligently tag them locally
+            const allColleges = result.predictions.map(c => {
+              const rawName = (c.institute_name || "").toLowerCase().replace(/[^a-z]/g, '');
+              const isIIT = rawName.includes("indianinstituteoftechnology") || 
+                            rawName.includes("ismdhanbad") || 
+                            (c.institute_name || "").includes("IIT");
+              
+              return { ...c, exam: isIIT ? "JEE Adv" : "JEE Main" };
             });
-            const mapped = nonIITs.map(c => ({ ...c, exam: "JEE Main" }));
-            allColleges = [...allColleges, ...mapped];
+            setMasterData(allColleges);
           }
         }
-
-        setMasterData(allColleges);
       } catch (err) {
         setError("Database offline. Check your Render server.");
       } finally {
@@ -118,7 +108,6 @@ function App() {
   const filteredAndSortedData = useMemo(() => {
     let result = [...masterData];
 
-    // 1. Institute Type Filter
     if (instituteType !== "All") {
       result = result.filter(d => {
         if (instituteType === "IIT") return d.exam === "JEE Adv";
@@ -128,27 +117,22 @@ function App() {
       });
     }
 
-    // 2. 🔥 SMART RANK LOGIC 🔥
     result = result.filter(d => {
       const hasMain = mainRank !== "";
       const hasAdv = advRank !== "";
 
-      // Condition 0: No ranks entered -> show all
       if (!hasMain && !hasAdv) return true;
 
-      // Condition 1: ONLY Main Rank entered -> Show only JEE Main colleges & filter by rank
       if (hasMain && !hasAdv) {
         if (d.exam === "JEE Adv") return false; 
         return d.closing_rank >= Number(mainRank);
       }
 
-      // Condition 2: ONLY Adv Rank entered -> Show only IITs & filter by rank
       if (!hasMain && hasAdv) {
         if (d.exam === "JEE Main") return false; 
         return d.closing_rank >= Number(advRank);
       }
 
-      // Condition 3: BOTH ranks entered -> Show all, but filter against respective ranks
       if (hasMain && hasAdv) {
         if (d.exam === "JEE Adv") return d.closing_rank >= Number(advRank);
         if (d.exam === "JEE Main") return d.closing_rank >= Number(mainRank);
@@ -157,7 +141,6 @@ function App() {
       return true;
     });
 
-    // 3. Home State & Quota Filtering
     if (strictEligibility && homeState !== "None") {
       result = result.filter(d => {
         if (d.quota === "AI" || d.quota === "GO") return true;
@@ -168,13 +151,11 @@ function App() {
       });
     }
 
-    // 4. Branch Search
     if (searchBranch.trim() !== "") {
       const lower = searchBranch.toLowerCase();
       result = result.filter(d => d.academic_program && d.academic_program.toLowerCase().includes(lower));
     }
 
-    // 5. Safe Only Check
     if (safeOnly) {
       result = result.filter(d => {
         const appliedRank = d.exam === "JEE Adv" ? Number(advRank) : Number(mainRank);
@@ -183,7 +164,6 @@ function App() {
       });
     }
 
-    // 6. Sort
     result.sort((a, b) => {
       let valA = a[sortCol];
       let valB = b[sortCol];
@@ -417,6 +397,7 @@ function App() {
           </div>
         </div>
       </main>
+
       <Analytics />
       <SpeedInsights />
     </div>
