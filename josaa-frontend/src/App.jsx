@@ -278,6 +278,7 @@ function App() {
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5">JoSAA Round</label>
                 <select value={roundNo} onChange={(e) => setRoundNo(e.target.value)} className="w-full bg-[#0B0F19] border border-gray-700/50 rounded-lg p-2.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-500 appearance-none">
+                  <option value="0">MAX Rank (Across All Rounds)</option>
                   <option value="1">Round 1</option>
                   <option value="2">Round 2</option>
                   <option value="3">Round 3</option>
@@ -346,7 +347,9 @@ function App() {
           {loading && (
             <div className="absolute inset-0 bg-[#0B0F19]/60 backdrop-blur-sm flex flex-col items-center justify-center z-10">
               <Loader2 size={32} className="animate-spin text-cyan-400 mb-4" />
-              <p className="text-sm font-semibold text-cyan-400 tracking-wider uppercase">Loading Round {roundNo} Data...</p>
+              <p className="text-sm font-semibold text-cyan-400 tracking-wider uppercase">
+  {roundNo === "0" ? "Calculating Max Rank Across All Rounds..." : `Loading Round ${roundNo} Data...`}
+</p>
             </div>
           )}
 
