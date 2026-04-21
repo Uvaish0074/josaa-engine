@@ -345,7 +345,7 @@ function App() {
         </div>
 
         <div className="mt-2 text-center select-none">
-          <p className="text-[10px] text-gray-500 font-semibold tracking-[0.15em] uppercase">Engineered with <span className="text-cyan-400">🚀</span> by</p>
+          <p className="text-[10px] text-gray-500 font-semibold tracking-[0.15em] uppercase">Engineered with <span className="text-cyan-400">⚡</span> by</p>
           <p className="text-[15px] font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mt-0.5 tracking-wide">UVAISH</p>
         </div>
       </aside>
