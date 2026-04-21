@@ -48,7 +48,7 @@ function App() {
   
   const [instituteType, setInstituteType] = useState("All");
   const [searchBranch, setSearchBranch] = useState("");
-  const [roundNo, setRoundNo] = useState("6"); // BRAND NEW: Round State
+  const [roundNo, setRoundNo] = useState("6");
   const [safeOnly, setSafeOnly] = useState(false);
   const [strictEligibility, setStrictEligibility] = useState(true);
   
@@ -61,7 +61,6 @@ function App() {
   // 🔥 Make sure your Render URL is correct here
   const API_BASE_URL = "https://josaa-backend-api.onrender.com"; 
 
-  // 🚀 ENGINE 1: Trigger fetch when Category, Gender, OR Round changes
   useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true);
@@ -72,7 +71,7 @@ function App() {
         const encCat = encodeURIComponent(category);
         const encGen = encodeURIComponent(gender);
 
-        // Fetch IITs dynamically using roundNo
+        // Fetch IITs
         const resAdv = await fetch(`${API_BASE_URL}/predict?rank=0&category=${encCat}&gender=${encGen}&round_no=${roundNo}&institute_type=Indian%20Institute%20of%20Technology`);
         if (resAdv.ok) {
           const result = await resAdv.json();
@@ -82,7 +81,7 @@ function App() {
           }
         }
 
-        // Fetch NITs/IIITs/GFTIs dynamically using roundNo
+        // Fetch NITs/IIITs/GFTIs
         const resMain = await fetch(`${API_BASE_URL}/predict?rank=0&category=${encCat}&gender=${encGen}&round_no=${roundNo}`);
         if (resMain.ok) {
           const result = await resMain.json();
@@ -106,7 +105,7 @@ function App() {
     };
 
     fetchAllData();
-  }, [category, gender, roundNo]); // Added roundNo as a dependency
+  }, [category, gender, roundNo]); 
 
   const isCollegeInHomeState = (instName, stateStr) => {
     if (stateStr === "None") return false;
@@ -117,6 +116,7 @@ function App() {
   const filteredAndSortedData = useMemo(() => {
     let result = [...masterData];
 
+    // 1. Institute Type Filter
     if (instituteType !== "All") {
       result = result.filter(d => {
         if (instituteType === "IIT") return d.exam === "JEE Adv";
@@ -126,16 +126,36 @@ function App() {
       });
     }
 
+    // 2. 🔥 SMART RANK LOGIC 🔥
     result = result.filter(d => {
-      if (d.exam === "JEE Adv") {
-        if (!advRank) return true; 
-        return d.closing_rank >= Number(advRank);
-      } else {
-        if (!mainRank) return true; 
+      const hasMain = mainRank !== "";
+      const hasAdv = advRank !== "";
+
+      // Condition 0: No ranks entered -> show all
+      if (!hasMain && !hasAdv) return true;
+
+      // Condition 1: ONLY Main Rank entered -> Show only JEE Main colleges & filter by rank
+      if (hasMain && !hasAdv) {
+        if (d.exam === "JEE Adv") return false; 
         return d.closing_rank >= Number(mainRank);
       }
+
+      // Condition 2: ONLY Adv Rank entered -> Show only IITs & filter by rank
+      if (!hasMain && hasAdv) {
+        if (d.exam === "JEE Main") return false; 
+        return d.closing_rank >= Number(advRank);
+      }
+
+      // Condition 3: BOTH ranks entered -> Show all, but filter against respective ranks
+      if (hasMain && hasAdv) {
+        if (d.exam === "JEE Adv") return d.closing_rank >= Number(advRank);
+        if (d.exam === "JEE Main") return d.closing_rank >= Number(mainRank);
+      }
+
+      return true;
     });
 
+    // 3. Home State & Quota Filtering
     if (strictEligibility && homeState !== "None") {
       result = result.filter(d => {
         if (d.quota === "AI" || d.quota === "GO") return true;
@@ -146,11 +166,13 @@ function App() {
       });
     }
 
+    // 4. Branch Search
     if (searchBranch.trim() !== "") {
       const lower = searchBranch.toLowerCase();
       result = result.filter(d => d.academic_program && d.academic_program.toLowerCase().includes(lower));
     }
 
+    // 5. Safe Only Check
     if (safeOnly) {
       result = result.filter(d => {
         const appliedRank = d.exam === "JEE Adv" ? Number(advRank) : Number(mainRank);
@@ -159,6 +181,7 @@ function App() {
       });
     }
 
+    // 6. Sort
     result.sort((a, b) => {
       let valA = a[sortCol];
       let valB = b[sortCol];
@@ -270,8 +293,6 @@ function App() {
           <div>
             <div className="flex items-center gap-2 mb-4 text-gray-200 font-semibold text-sm"><Search size={18} className="text-gray-400" /> Advanced Filters</div>
             <div className="flex flex-col gap-4">
-              
-              {/* BRAND NEW: Round Selector Dropdown */}
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5">JoSAA Round</label>
                 <select value={roundNo} onChange={(e) => setRoundNo(e.target.value)} className="w-full bg-[#0B0F19] border border-gray-700/50 rounded-lg p-2.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-500 appearance-none">
@@ -283,7 +304,6 @@ function App() {
                   <option value="6">Round 6 (Final)</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5">Gender Pool</label>
                 <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full bg-[#0B0F19] border border-gray-700/50 rounded-lg p-2.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-500 appearance-none">
