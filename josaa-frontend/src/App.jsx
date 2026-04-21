@@ -50,7 +50,7 @@ function App() {
   
   const [instituteType, setInstituteType] = useState("All");
   const [searchBranch, setSearchBranch] = useState("");
-  const [roundNo, setRoundNo] = useState("6");
+  const [roundNo, setRoundNo] = useState("0");
   const [safeOnly, setSafeOnly] = useState(false);
   const [strictEligibility, setStrictEligibility] = useState(true);
   
@@ -180,7 +180,7 @@ function App() {
     setHomeState("None");
     setInstituteType("All");
     setSearchBranch("");
-    setRoundNo("6");
+    setRoundNo("0");
     setSafeOnly(false);
     setStrictEligibility(true);
   };
