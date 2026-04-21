@@ -19,19 +19,25 @@ app.add_middleware(
 )
 
 # Database connection dependency
+# Database connection dependency
 def get_db_connection():
     try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT"),
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD")
-        )
+        # It will look for the cloud URL first, and fall back to your local ones if needed
+        db_url = os.getenv("DATABASE_URL")
+        
+        if db_url:
+            conn = psycopg2.connect(db_url)
+        else:
+            conn = psycopg2.connect(
+                host=os.getenv("DB_HOST"),
+                port=os.getenv("DB_PORT"),
+                dbname=os.getenv("DB_NAME"),
+                user=os.getenv("DB_USER"),
+                password=os.getenv("DB_PASSWORD")
+            )
         return conn
     except Exception as e:
         raise HTTPException(status_code=500, detail="Database connection failed.")
-
 @app.get("/")
 def read_root():
     return {"status": "JoSAA Engine API is running securely."}
