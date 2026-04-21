@@ -3,7 +3,8 @@ import Papa from 'papaparse';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Download, FileText, Filter, RotateCcw, Search, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const hsKeywords = {
   "Andhra Pradesh": ["andhra pradesh", "tadepalligudem"],
@@ -417,6 +418,7 @@ function App() {
         </div>
       </main>
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
