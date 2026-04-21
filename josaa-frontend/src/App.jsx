@@ -70,7 +70,7 @@ function App() {
         let allColleges = [];
 
         // Fetch IITs (Rank = 0 grabs everything)
-        const resAdv = await fetch(`http://127.0.0.1:8000/predict?rank=0&category=${category}&gender=${gender}&round_no=6&institute_type=Indian Institute of Technology`);
+        const resAdv = await fetch(`https://josaa-backend-api.onrender.com/predict?rank=0&category=${category}&gender=${gender}&round_no=6&institute_type=Indian Institute of Technology`);
         if (resAdv.ok) {
           const result = await resAdv.json();
           if (result.predictions) {
@@ -80,7 +80,7 @@ function App() {
         }
 
         // Fetch NITs/IIITs/GFTIs (Rank = 0 grabs everything)
-        const resMain = await fetch(`http://127.0.0.1:8000/predict?rank=0&category=${category}&gender=${gender}&round_no=6`);
+        const resMain = await fetch(`https://josaa-backend-api.onrender.com/predict?rank=0&category=${category}&gender=${gender}&round_no=6`);
         if (resMain.ok) {
           const result = await resMain.json();
           if (result.predictions) {
