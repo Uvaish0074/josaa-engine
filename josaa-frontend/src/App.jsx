@@ -48,6 +48,7 @@ function App() {
   
   const [instituteType, setInstituteType] = useState("All");
   const [searchBranch, setSearchBranch] = useState("");
+  const [roundNo, setRoundNo] = useState("6"); // BRAND NEW: Round State
   const [safeOnly, setSafeOnly] = useState(false);
   const [strictEligibility, setStrictEligibility] = useState(true);
   
@@ -57,9 +58,10 @@ function App() {
   const [sortCol, setSortCol] = useState("closing_rank");
   const [sortDir, setSortDir] = useState("asc");
 
-  // 🔥 PASTE YOUR RENDER URL HERE (No trailing slash!)
+  // 🔥 Make sure your Render URL is correct here
   const API_BASE_URL = "https://josaa-backend-api.onrender.com"; 
 
+  // 🚀 ENGINE 1: Trigger fetch when Category, Gender, OR Round changes
   useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true);
@@ -67,12 +69,11 @@ function App() {
       try {
         let allColleges = [];
         
-        // Safely encode URLs so spaces and brackets in "Female-only" don't crash the fetch
         const encCat = encodeURIComponent(category);
         const encGen = encodeURIComponent(gender);
 
-        // Fetch IITs
-        const resAdv = await fetch(`${API_BASE_URL}/predict?rank=0&category=${encCat}&gender=${encGen}&round_no=6&institute_type=Indian%20Institute%20of%20Technology`);
+        // Fetch IITs dynamically using roundNo
+        const resAdv = await fetch(`${API_BASE_URL}/predict?rank=0&category=${encCat}&gender=${encGen}&round_no=${roundNo}&institute_type=Indian%20Institute%20of%20Technology`);
         if (resAdv.ok) {
           const result = await resAdv.json();
           if (result.predictions) {
@@ -81,8 +82,8 @@ function App() {
           }
         }
 
-        // Fetch NITs/IIITs/GFTIs
-        const resMain = await fetch(`${API_BASE_URL}/predict?rank=0&category=${encCat}&gender=${encGen}&round_no=6`);
+        // Fetch NITs/IIITs/GFTIs dynamically using roundNo
+        const resMain = await fetch(`${API_BASE_URL}/predict?rank=0&category=${encCat}&gender=${encGen}&round_no=${roundNo}`);
         if (resMain.ok) {
           const result = await resMain.json();
           if (result.predictions) {
@@ -105,7 +106,7 @@ function App() {
     };
 
     fetchAllData();
-  }, [category, gender]);
+  }, [category, gender, roundNo]); // Added roundNo as a dependency
 
   const isCollegeInHomeState = (instName, stateStr) => {
     if (stateStr === "None") return false;
@@ -174,6 +175,7 @@ function App() {
     setHomeState("None");
     setInstituteType("All");
     setSearchBranch("");
+    setRoundNo("6");
     setSafeOnly(false);
     setStrictEligibility(true);
   };
@@ -198,13 +200,13 @@ function App() {
     const csv = Papa.unparse(csvData);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', 'josaa_predictions.csv'); document.body.appendChild(link);
+    link.setAttribute('download', `josaa_predictions_round_${roundNo}.csv`); document.body.appendChild(link);
     link.click(); document.body.removeChild(link);
   };
 
   const exportPDF = () => {
     const doc = new jsPDF();
-    doc.text("JoSAA Rank Predictions", 14, 15);
+    doc.text(`JoSAA Rank Predictions (Round ${roundNo})`, 14, 15);
     const tableColumn = ["Institute", "Program", "Quota", "Cat", "Closing", "Exam"];
     const tableRows = filteredAndSortedData.map(d => [
       d.institute_name ? d.institute_name.replace("Indian Institute of Technology", "IIT").replace("National Institute of Technology", "NIT").replace("Indian Institute of Information Technology", "IIIT") : "N/A",
@@ -212,7 +214,7 @@ function App() {
       d.quota, d.category, d.closing_rank, d.exam
     ]);
     autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20, styles: { fontSize: 8 }, headStyles: { fillColor: [0, 229, 255], textColor: [0,0,0] } });
-    doc.save(`josaa_predictions.pdf`);
+    doc.save(`josaa_predictions_round_${roundNo}.pdf`);
   };
 
   const renderSortIcon = (col) => {
@@ -268,6 +270,20 @@ function App() {
           <div>
             <div className="flex items-center gap-2 mb-4 text-gray-200 font-semibold text-sm"><Search size={18} className="text-gray-400" /> Advanced Filters</div>
             <div className="flex flex-col gap-4">
+              
+              {/* BRAND NEW: Round Selector Dropdown */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1.5">JoSAA Round</label>
+                <select value={roundNo} onChange={(e) => setRoundNo(e.target.value)} className="w-full bg-[#0B0F19] border border-gray-700/50 rounded-lg p-2.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-500 appearance-none">
+                  <option value="1">Round 1</option>
+                  <option value="2">Round 2</option>
+                  <option value="3">Round 3</option>
+                  <option value="4">Round 4</option>
+                  <option value="5">Round 5</option>
+                  <option value="6">Round 6 (Final)</option>
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5">Gender Pool</label>
                 <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full bg-[#0B0F19] border border-gray-700/50 rounded-lg p-2.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-500 appearance-none">
@@ -328,7 +344,7 @@ function App() {
           {loading && (
             <div className="absolute inset-0 bg-[#0B0F19]/60 backdrop-blur-sm flex flex-col items-center justify-center z-10">
               <Loader2 size={32} className="animate-spin text-cyan-400 mb-4" />
-              <p className="text-sm font-semibold text-cyan-400 tracking-wider uppercase">Loading JoSAA Database...</p>
+              <p className="text-sm font-semibold text-cyan-400 tracking-wider uppercase">Loading Round {roundNo} Data...</p>
             </div>
           )}
 
@@ -339,11 +355,8 @@ function App() {
                   <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 transition-colors" onClick={() => handleSort('institute_name')}>Institute {renderSortIcon('institute_name')}</th>
                   <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider w-[28%] cursor-pointer hover:text-gray-200 transition-colors" onClick={() => handleSort('academic_program')}>Program {renderSortIcon('academic_program')}</th>
                   <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center" onClick={() => handleSort('quota')}>Quota {renderSortIcon('quota')}</th>
-                  
-                  {/* BRAND NEW: Restored Category & Gender Columns */}
                   <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center" onClick={() => handleSort('category')}>Cat {renderSortIcon('category')}</th>
                   <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center" onClick={() => handleSort('gender')}>Gender {renderSortIcon('gender')}</th>
-                  
                   <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 transition-colors" onClick={() => handleSort('exam')}>Exam {renderSortIcon('exam')}</th>
                   <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right cursor-pointer hover:text-gray-200 transition-colors" onClick={() => handleSort('closing_rank')}>Closing ^ {renderSortIcon('closing_rank')}</th>
                   <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">Status</th>
@@ -367,21 +380,12 @@ function App() {
                       <tr key={index} className="hover:bg-[#1A2030] transition-colors group">
                         <td className="p-4 text-sm font-semibold text-gray-200">{shortName}</td>
                         <td className="p-4 text-sm text-gray-400 leading-snug">{college.academic_program}</td>
-                        <td className="p-4 text-center">
-                          <span className="bg-gray-800/80 text-gray-300 px-2 py-1 rounded text-xs font-bold border border-gray-700/50">{college.quota}</span>
-                        </td>
-                        
-                        {/* Data displays for the restored columns */}
+                        <td className="p-4 text-center"><span className="bg-gray-800/80 text-gray-300 px-2 py-1 rounded text-xs font-bold border border-gray-700/50">{college.quota}</span></td>
                         <td className="p-4 text-center text-xs text-gray-400 font-medium">{college.category}</td>
                         <td className="p-4 text-center text-xs text-gray-400">{shortGender}</td>
-
-                        <td className="p-4 text-sm font-medium text-gray-500">
-                          <span className={college.exam === "JEE Adv" ? "text-purple-400" : "text-blue-400"}>{college.exam}</span>
-                        </td>
+                        <td className="p-4 text-sm font-medium text-gray-500"><span className={college.exam === "JEE Adv" ? "text-purple-400" : "text-blue-400"}>{college.exam}</span></td>
                         <td className="p-4 text-sm font-bold text-[#00E5FF] font-mono text-right">{college.closing_rank}</td>
-                        <td className="p-4 text-center">
-                          <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${status.class}`}>{status.text}</span>
-                        </td>
+                        <td className="p-4 text-center"><span className={`px-3 py-1 rounded-full text-[11px] font-bold ${status.class}`}>{status.text}</span></td>
                       </tr>
                     );
                   })
