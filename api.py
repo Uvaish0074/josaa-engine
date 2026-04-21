@@ -173,3 +173,5 @@ def predict_colleges(
     finally:
         cursor.close()
         conn.close()
+
+# forcing render to update
